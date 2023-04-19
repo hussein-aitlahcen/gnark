@@ -124,6 +124,13 @@ func (vk *VerifyingKey) writeTo(w io.Writer, raw bool) (int64, error) {
 	if err := enc.Encode(vk.G1.K); err != nil {
 		return enc.BytesWritten(), err
 	}
+
+	if err := enc.Encode(vk.CommitmentKey); err != nil {
+		return enc.BytesWritten(), err
+	}
+	if err := enc.Encode(vk.CommitmentInfo); err != nil {
+		return enc.BytesWritten(), err
+	}
 	return enc.BytesWritten(), nil
 }
 
@@ -167,6 +174,13 @@ func (vk *VerifyingKey) readFrom(r io.Reader, decOptions ...func(*curve.Decoder)
 
 	// uint32(len(Kvk)),[Kvk]1
 	if err := dec.Decode(&vk.G1.K); err != nil {
+		return dec.BytesRead(), err
+	}
+
+	if err := dec.Decode(&vk.CommitmentKey); err != nil {
+		return dec.BytesRead(), err
+	}
+	if err := dec.Decode(&vk.CommitmentInfo); err != nil {
 		return dec.BytesRead(), err
 	}
 
