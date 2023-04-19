@@ -17,8 +17,11 @@
 package groth16
 
 import (
-	curve "github.com/consensys/gnark-crypto/ecc/bn254"
+	"fmt"
 	"io"
+
+	curve "github.com/consensys/gnark-crypto/ecc/bn254"
+	"github.com/consensys/gnark/constraint/solver"
 )
 
 // WriteTo writes binary encoding of the Proof elements to writer
@@ -124,6 +127,43 @@ func (vk *VerifyingKey) writeTo(w io.Writer, raw bool) (int64, error) {
 	if err := enc.Encode(vk.G1.K); err != nil {
 		return enc.BytesWritten(), err
 	}
+
+	if _, err := vk.CommitmentKey.WriteTo(enc); err != nil {
+		return enc.BytesWritten(), err
+	}
+
+	writeInts := func(v []int) error {
+		if err := enc.Encode(uint32(len(v))); err != nil {
+			return err
+		}
+		for i := 0; i < len(v); i++ {
+			if err := enc.Encode(uint32(v[i])); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	fmt.Println("Encode 1")
+	if err := writeInts(vk.CommitmentInfo.Committed); err != nil {
+		return enc.BytesWritten(), err
+	}
+	fmt.Println("Encode 2")
+	if err := enc.Encode(uint32(vk.CommitmentInfo.NbPrivateCommitted)); err != nil {
+		return enc.BytesWritten(), err
+	}
+	fmt.Println("Encode 3")
+	if err := enc.Encode(uint32(vk.CommitmentInfo.HintID)); err != nil {
+		return enc.BytesWritten(), err
+	}
+	fmt.Println("Encode 4")
+	if err := enc.Encode(uint32(vk.CommitmentInfo.CommitmentIndex)); err != nil {
+		return enc.BytesWritten(), err
+	}
+	fmt.Println("Encode 5")
+	if err := writeInts(vk.CommitmentInfo.CommittedAndCommitment); err != nil {
+		return enc.BytesWritten(), err
+	}
 	return enc.BytesWritten(), nil
 }
 
@@ -167,6 +207,48 @@ func (vk *VerifyingKey) readFrom(r io.Reader, decOptions ...func(*curve.Decoder)
 
 	// uint32(len(Kvk)),[Kvk]1
 	if err := dec.Decode(&vk.G1.K); err != nil {
+		return dec.BytesRead(), err
+	}
+
+	if _, err := vk.CommitmentKey.ReadFrom(dec); err != nil {
+		return dec.BytesRead(), err
+	}
+
+	readInts := func(out *[]int) error {
+		var size uint32
+		if err := dec.Decode(&size); err != nil {
+			return err
+		}
+		*out = make([]int, size)
+		for i := uint32(0); i < size; i++ {
+			var v uint32
+			if err := dec.Decode(&v); err != nil {
+				return err
+			}
+			(*out)[i] = int(v)
+		}
+		return nil
+	}
+
+	if err := readInts(&vk.CommitmentInfo.Committed); err != nil {
+		return dec.BytesRead(), err
+	}
+	var nbPrivateCommitted uint32
+	if err := dec.Decode(&nbPrivateCommitted); err != nil {
+		return dec.BytesRead(), err
+	}
+	vk.CommitmentInfo.NbPrivateCommitted = int(nbPrivateCommitted)
+	var hint uint32
+	if err := dec.Decode(&hint); err != nil {
+		return dec.BytesRead(), err
+	}
+	vk.CommitmentInfo.HintID = solver.HintID(hint)
+	var commitmentIndex uint32
+	if err := dec.Decode(&commitmentIndex); err != nil {
+		return dec.BytesRead(), err
+	}
+	vk.CommitmentInfo.CommitmentIndex = int(commitmentIndex)
+	if err := readInts(&vk.CommitmentInfo.CommittedAndCommitment); err != nil {
 		return dec.BytesRead(), err
 	}
 
