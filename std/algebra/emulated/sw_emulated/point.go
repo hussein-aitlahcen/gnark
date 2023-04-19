@@ -98,6 +98,10 @@ func (c *Curve[B, S]) AssertIsEqual(p, q *AffinePoint[B]) {
 	c.baseApi.AssertIsEqual(&p.Y, &q.Y)
 }
 
+func (c *Curve[B, S]) UnsafeAdd(p, q *AffinePoint[B]) *AffinePoint[B] {
+	return c.add(p, q)
+}
+
 // add adds p and q and returns it. It doesn't modify p nor q.
 //
 // ⚠️  p must be different than q and -q, and both nonzero.
