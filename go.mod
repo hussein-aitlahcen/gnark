@@ -31,4 +31,4 @@ require (
 	rsc.io/tmplfunc v0.0.3 // indirect
 )
 
-replace github.com/consensys/gnark-crypto => github.com/hussein-aitlahcen/gnark-crypto v0.0.0-20230419121207-4b060f71034a
+replace github.com/consensys/gnark-crypto => github.com/unionfi/gnark-crypto v0.0.0-20230419121207-4b060f71034a
